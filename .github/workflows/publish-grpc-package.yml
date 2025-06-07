@@ -1,0 +1,95 @@
+name: grpc-package
+
+on:
+  workflow_call:
+    secrets:
+      NPM_TOKEN:
+        required: true
+      GH_PAT:
+        required: true
+
+jobs:
+  build:
+    name: Build gRPC Package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          registry-url: 'https://npm.pkg.github.com/'
+
+      - name: Configure .npmrc for GitHub Packages
+        run: |
+          echo "@study-words:registry=https://npm.pkg.github.com" > ~/.npmrc
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.NPM_TOKEN }}" >> ~/.npmrc
+
+      - name: Install dependencies
+        run: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Get package name (scoped)
+        id: get-package-name
+        run: |
+          PACKAGE_NAME=@study-words/$(node -p "require('./package.json').name")
+          echo "PACKAGE_NAME=$PACKAGE_NAME" >> $GITHUB_ENV
+
+      - name: Get current package version
+        id: get-current-version
+        run: |
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          echo "CURRENT_VERSION=$CURRENT_VERSION" >> $GITHUB_ENV
+
+      - name: Get published version
+        id: get-published-version
+        run: |
+          set -e
+          echo "Getting published version of $PACKAGE_NAME"
+          version=$(npm view "$PACKAGE_NAME" version --registry=https://npm.pkg.github.com || echo "not_found")
+          echo "PUBLISHED_VERSION=$version" >> $GITHUB_ENV
+          echo "Published version is: $version"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Check if package should be published
+        id: check-should-publish
+        run: |
+          echo "Current version: $CURRENT_VERSION"
+          echo "Published version: $PUBLISHED_VERSION"
+
+          if [ "$PUBLISHED_VERSION" == "not_found" ]; then
+            echo "should_publish=true" >> $GITHUB_OUTPUT
+          elif [ "$CURRENT_VERSION" != "$PUBLISHED_VERSION" ]; then
+            echo "should_publish=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_publish=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          CURRENT_VERSION: ${{ env.CURRENT_VERSION }}
+          PUBLISHED_VERSION: ${{ env.PUBLISHED_VERSION }}
+
+      - name: Generate definitions
+        if: steps.check-should-publish.outputs.should_publish == 'true'
+        working-directory: ./node_modules/@study-words/grpc-tools/package
+        run: npm run generate-definitions
+
+      - name: Publish Package
+        if: steps.check-should-publish.outputs.should_publish == 'true'
+        working-directory: ./node_modules/@study-words/grpc-tools/package
+        run: npm publish --access restricted
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Skip publish (version already exists)
+        if: steps.check-should-publish.outputs.should_publish == 'false'
+        run: |
+          echo "Skipping publish — version already exists: $CURRENT_VERSION"
+        env:
+          CURRENT_VERSION: ${{ env.CURRENT_VERSION }}
