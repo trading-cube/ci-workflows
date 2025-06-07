@@ -27,7 +27,7 @@ jobs:
 
       - name: Configure .npmrc for GitHub Packages
         run: |
-          echo "@study-words:registry=https://npm.pkg.github.com" > ~/.npmrc
+          echo "@trading-cube:registry=https://npm.pkg.github.com" > ~/.npmrc
           echo "//npm.pkg.github.com/:_authToken=${{ secrets.NPM_TOKEN }}" >> ~/.npmrc
 
       - name: Install dependencies
@@ -38,7 +38,7 @@ jobs:
       - name: Get package name (scoped)
         id: get-package-name
         run: |
-          PACKAGE_NAME=@study-words/$(node -p "require('./package.json').name")
+          PACKAGE_NAME=@trading-cube/$(node -p "require('./package.json').name")
           echo "PACKAGE_NAME=$PACKAGE_NAME" >> $GITHUB_ENV
 
       - name: Get current package version
@@ -77,12 +77,12 @@ jobs:
 
       - name: Generate definitions
         if: steps.check-should-publish.outputs.should_publish == 'true'
-        working-directory: ./node_modules/@study-words/grpc-tools/package
+        working-directory: ./node_modules/@trading-cube/grpc-tools/package
         run: npm run generate-definitions
 
       - name: Publish Package
         if: steps.check-should-publish.outputs.should_publish == 'true'
-        working-directory: ./node_modules/@study-words/grpc-tools/package
+        working-directory: ./node_modules/@trading-cube/grpc-tools/package
         run: npm publish --access restricted
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
