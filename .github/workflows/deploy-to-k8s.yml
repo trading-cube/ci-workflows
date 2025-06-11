@@ -54,19 +54,19 @@ jobs:
         run: |
           docker build \
             --build-arg NPM_TOKEN=${{ secrets.NPM_TOKEN }} \
-            -t ghcr.io/study-words/${{ inputs.namespace }}-${{ inputs.deployment_name }}:${{ github.sha }} .
-          docker push ghcr.io/study-words/${{ inputs.namespace }}-${{ inputs.deployment_name }}:${{ github.sha }}
+            -t ghcr.io/trading-cubes/${{ inputs.namespace }}-${{ inputs.deployment_name }}:${{ github.sha }} .
+          docker push ghcr.io/trading-cube/${{ inputs.namespace }}-${{ inputs.deployment_name }}:${{ github.sha }}
 
       - name: Checkout infrastructure repo
         uses: actions/checkout@v4
         with:
-          repository: study-words/infrastructure
+          repository: trading-cube/infrastructure
           token: ${{ secrets.GH_PAT }}
           path: infrastructure
 
       - name: Set image tag
         run: |
-          kustomize edit set image "ghcr.io/study-words/${{ inputs.namespace }}-${{ inputs.deployment_name }}=ghcr.io/study-words/${{ inputs.namespace }}-${{ inputs.deployment_name }}:${{ github.sha }}"
+          kustomize edit set image "ghcr.io/trading-cube/${{ inputs.namespace }}-${{ inputs.deployment_name }}=ghcr.io/trading-cube${{ inputs.namespace }}-${{ inputs.deployment_name }}:${{ github.sha }}"
         working-directory: ${{ steps.path.outputs.SERVICE_PATH }}
 
       - name: Setup kubeconfig
