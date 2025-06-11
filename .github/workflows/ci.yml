@@ -95,22 +95,22 @@ jobs:
 
       - name: Run integration tests
         env:
-          DB_TEST_HOST: 127.0.0.1
-          DB_TEST_PORT: 3306
-          DB_TEST_USERNAME: root
-          DB_TEST_PASSWORD: root
-          DB_TEST_DATABASE: test_db
-          DB_TEST_DIALECT: mysql
+          TEST_DB_HOST: 127.0.0.1
+          TEST_DB_PORT: 3306
+          TEST_DB_USERNAME: root
+          TEST_DB_PASSWORD: root
+          TEST_DB_DATABASE: test_db
+          TEST_DB_DIALECT: mysql
         run: npm run test:integration
 
       - name: Integration test coverage
         env:
-          DB_TEST_HOST: 127.0.0.1
-          DB_TEST_PORT: 3306
-          DB_TEST_USERNAME: root
-          DB_TEST_PASSWORD: root
-          DB_TEST_DATABASE: test_db
-          DB_TEST_DIALECT: mysql
+          TEST_DB_HOST: 127.0.0.1
+          TEST_DB_PORT: 3306
+          TEST_DB_USERNAME: root
+          TEST_DB_PASSWORD: root
+          TEST_DB_DATABASE: test_db
+          TEST_DB_DIALECT: mysql
         run: npm run test:integration:coverage
 
       - name: Fail if integration coverage < 90%
