@@ -37,7 +37,8 @@ jobs:
 
       - name: Build and push image
         run: |
-          --build-arg NPM_TOKEN=${{ secrets.NPM_TOKEN }} \
+          docker build \
+            --build-arg NPM_TOKEN=${{ secrets.NPM_TOKEN }} \
             -t ghcr.io/trading-cube/${{ inputs.namespace }}-${{ inputs.deployment_name }}:${{ github.sha }} .
           docker push ghcr.io/trading-cube/${{ inputs.namespace }}-${{ inputs.deployment_name }}:${{ github.sha }}
 
