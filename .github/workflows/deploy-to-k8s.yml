@@ -6,9 +6,6 @@ on:
       environment:
         required: true
         type: string
-      type:
-        required: true
-        type: string
       namespace:
         required: true
         type: string
@@ -21,8 +18,6 @@ on:
       KUBECONFIG:
         required: true
       GHCR_TOKEN:
-        required: true
-      NPM_TOKEN:
         required: true
 
 jobs:
@@ -38,23 +33,10 @@ jobs:
       - name: Log in to GHCR
         run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      - name: Determine deployment path
-        id: path
-        run: |
-          if [[ "${{ inputs.namespace }}" == "core" ]]; then
-            echo "SERVICE_PATH=infrastructure/k8s/overlays/production/${{ inputs.namespace }}/${{ inputs.deployment_name }}" >> $GITHUB_OUTPUT
-          elif [[ "${{ inputs.namespace }}" == "api" ]]; then
-            echo "SERVICE_PATH=infrastructure/k8s/overlays/production/${{ inputs.namespace }}/${{ inputs.deployment_name }}/${{ inputs.type }}" >> $GITHUB_OUTPUT
-          else
-            echo "Unsupported namespace: ${{ inputs.namespace }}"
-            exit 1
-          fi
-
       - name: Build and push image
         run: |
           docker build \
-            --build-arg NPM_TOKEN=${{ secrets.NPM_TOKEN }} \
-            -t ghcr.io/trading-cubes/${{ inputs.namespace }}-${{ inputs.deployment_name }}:${{ github.sha }} .
+            -t ghcr.io/trading-cube/${{ inputs.namespace }}-${{ inputs.deployment_name }}:${{ github.sha }} .
           docker push ghcr.io/trading-cube/${{ inputs.namespace }}-${{ inputs.deployment_name }}:${{ github.sha }}
 
       - name: Checkout infrastructure repo
@@ -66,8 +48,8 @@ jobs:
 
       - name: Set image tag
         run: |
-          kustomize edit set image "ghcr.io/trading-cube/${{ inputs.namespace }}-${{ inputs.deployment_name }}=ghcr.io/trading-cube${{ inputs.namespace }}-${{ inputs.deployment_name }}:${{ github.sha }}"
-        working-directory: ${{ steps.path.outputs.SERVICE_PATH }}
+          kustomize edit set image "ghcr.io/trading-cube/${{ inputs.namespace }}-${{ inputs.deployment_name }}=ghcr.io/trading-cube/${{ inputs.namespace }}-${{ inputs.deployment_name }}:${{ github.sha }}"
+        working-directory: infrastructure/kustomization/overlays/${{ inputs.environment }}/${{ inputs.namespace }}/${{ inputs.deployment_name }}
 
       - name: Setup kubeconfig
         run: echo "${{ secrets.KUBECONFIG }}" > kubeconfig.yaml
@@ -76,7 +58,8 @@ jobs:
         env:
           KUBECONFIG: ${{ github.workspace }}/kubeconfig.yaml
         run: |
-          kubectl apply -k infrastructure/k8s/overlays/${{ inputs.environment }}
+          kubectl apply -k infrastructure/kustomization/overlays/${{ inputs.environment }}/${{ inputs.namespace }}/${{ inputs.deployment_name }}
+
 
       - name: Wait for deployment rollout
         env:
